@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+
+magik_trainingkit_torch_1.12.0_cuda11.3-3.0.0-py3-none-any.whl
+magik_transformer-1.1.0-py3-none-any.whl
+magik-transform-tools
+
+*.mk.h
+*.log
+*.bin
+*.npy
+*.xml
+*.iml
+
+# Large local datasets and images
+data/anytrek_multiclass/images/
