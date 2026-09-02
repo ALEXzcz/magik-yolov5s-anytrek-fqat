@@ -8,7 +8,7 @@ FQAT_PROJECT=./runs/train/anytrek-3cls-4bit-yolov5n
 FLOAT_CKPT=./checkpoint/32W32F/weights/best-tmp.pt
 FQAT_CKPT=./checkpoint/4W4F/weights/best-tmp.pt
 
-# float32 baseline:
+### float32 baseline:
 # python3 train.py \
 #   --data data/anytrek_multiclass.yaml \
 #   --cfg models/yolov5n.yaml \
@@ -23,7 +23,7 @@ FQAT_CKPT=./checkpoint/4W4F/weights/best-tmp.pt
 # LATEST_FLOAT_BEST="$(find "$FLOAT_PROJECT" -type f -path '*/weights/best.pt' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
 # cp "$LATEST_FLOAT_BEST" "$FLOAT_CKPT"
 
-# 4bit FQAT:
+### 4bit FQAT:
 python3 train.py \
   --data data/anytrek_multiclass.yaml \
   --cfg models/yolov5n.yaml \

@@ -13,4 +13,4 @@ magik-transform-tools
 *.iml
 
 # Large local datasets and images
-data/anytrek_multiclass/images/
+data/anytrek_multiclass
