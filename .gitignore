@@ -13,4 +13,22 @@ magik-transform-tools
 *.iml
 
 # Large local datasets and images
-data/anytrek_multiclass
+data/anytrek_multiclass/*
+!data/anytrek_multiclass/
+!data/anytrek_multiclass/train.txt
+!data/anytrek_multiclass/val.txt
+!data/anytrek_multiclass/test.txt
+data/anytrek_detect/
+data/cropped_1920x1080/
+data/task_*/
+data/calibrate_data/
+
+# Training and inference outputs
+runs/
+checkpoint/**/*.pt
+*.pt
+*.onnx
+*.mgk
+*.cache
+events.out.tfevents.*
+gpu_status.txt
