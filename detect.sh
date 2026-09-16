@@ -13,7 +13,9 @@ python detect.py \
   --imgs 640 \
   --device 0 \
   --model_only \
-  --bit 32
+  --bit 32 \
+  --conf-thres 0.5 \
+  --iou-thres 0.4
 
 # 8bit
 # python detect.py \

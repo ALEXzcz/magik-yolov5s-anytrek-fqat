@@ -4,6 +4,7 @@ import torch.nn as nn
 import random
 import numpy as np
 import os
+import math
 import yaml
 from pathlib import Path
 
@@ -20,7 +21,7 @@ seed_all(1000)
 
 DEFAULT_CALIBRATE_PATH = "calibrate.txt"
 DEFAULT_DATA_CFG = "data/anytrek_multiclass.yaml"
-DEFAULT_CALIBRATE_SAMPLES = 32
+DEFAULT_CALIBRATE_SAMPLES = 512
 
 
 def _read_data_yaml(data_cfg):
@@ -47,6 +48,36 @@ def _entries_all_exist(entries):
     return bool(entries) and all(Path(entry).exists() for entry in entries)
 
 
+def _calibration_source(path):
+    name = Path(path).name.lower()
+    if name.startswith("web_"):
+        return "web"
+    if name.startswith("logo_"):
+        return "logo"
+    return "real"
+
+
+def _calibration_category(path):
+    label_path = Path(str(path).replace("/images/", "/labels/")).with_suffix(".txt")
+    classes = set()
+    for line in label_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        fields = line.split()
+        if len(fields) >= 5:
+            classes.add(int(fields[0]))
+    classes = frozenset(classes)
+    if not classes:
+        return "empty"
+    if classes == {0}:
+        return "person"
+    if classes == {1}:
+        return "forklift"
+    if classes == {0, 1}:
+        return "mixed"
+    if classes == {2}:
+        return "logo"
+    return "other"
+
+
 def rebuild_calibrate_file(calibrate_path=DEFAULT_CALIBRATE_PATH,
                            data_cfg=DEFAULT_DATA_CFG,
                            sample_count=DEFAULT_CALIBRATE_SAMPLES,
@@ -67,21 +98,59 @@ def rebuild_calibrate_file(calibrate_path=DEFAULT_CALIBRATE_PATH,
     if not candidates:
         raise FileNotFoundError(f"No valid calibration images found from {train_list_path}")
 
-    sample_size = min(sample_count, len(candidates))
-    rng = random.Random(seed)
-    selected = rng.sample(candidates, sample_size)
+    # Keep calibration representative when an old or missing file triggers
+    # automatic regeneration. The quotas mirror tools/rebuild_dataset_splits.py.
+    if sample_count == 512:
+        requested = {
+            ("real", "person"): 300,
+            ("real", "forklift"): 90,
+            ("real", "mixed"): 30,
+            ("real", "empty"): 40,
+            ("web", "forklift"): 26,
+            ("logo", "logo"): 20,
+            ("logo", "empty"): 6,
+        }
+        grouped = {}
+        for candidate in candidates:
+            key = (_calibration_source(candidate), _calibration_category(candidate))
+            grouped.setdefault(key, []).append(candidate)
+        rng = random.Random(seed)
+        selected = []
+        for key, count in requested.items():
+            pool = grouped.get(key, [])[:]
+            rng.shuffle(pool)
+            if len(pool) < count:
+                raise ValueError(
+                    f"Not enough calibration candidates for {key}: "
+                    f"{len(pool)} < {count}"
+                )
+            selected.extend(pool[:count])
+        rng.shuffle(selected)
+        sample_size = len(selected)
+    else:
+        sample_size = min(sample_count, len(candidates))
+        rng = random.Random(seed)
+        selected = rng.sample(candidates, sample_size)
     Path(calibrate_path).write_text("\n".join(selected) + "\n", encoding="utf-8")
     return selected
 
 
-def get_magik_quantizer(bit=4, calibrate_path=DEFAULT_CALIBRATE_PATH, data_cfg=DEFAULT_DATA_CFG):
+def get_magik_quantizer(bit=4, calibrate_path=DEFAULT_CALIBRATE_PATH,
+                        data_cfg=DEFAULT_DATA_CFG,
+                        calibrate_samples=DEFAULT_CALIBRATE_SAMPLES):
     entries = _load_existing_calibrate_entries(calibrate_path)
-    if not _entries_all_exist(entries):
-        rebuild_calibrate_file(calibrate_path=calibrate_path, data_cfg=data_cfg)
+    if len(entries) < calibrate_samples or not _entries_all_exist(entries):
+        rebuild_calibrate_file(
+            calibrate_path=calibrate_path,
+            data_cfg=data_cfg,
+            sample_count=calibrate_samples,
+        )
+    calibration_batch_size = 4
+    calibration_batches = math.ceil(calibrate_samples / calibration_batch_size)
     cal_data_reader = Yolov5DataReader(
         path=calibrate_path,
-        nbatchs=4,
-        batch_size=4,
+        nbatchs=calibration_batches,
+        batch_size=calibration_batch_size,
         img_size=(640, 640),
         mean=0,
         var=255
