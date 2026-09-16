@@ -1,0 +1,6 @@
+train: ./data/anytrek_multiclass/train.txt
+val: ./data/anytrek_multiclass/val.txt
+test: ./data/anytrek_multiclass/test.txt
+
+nc: 2
+names: ['person', 'forklift']
