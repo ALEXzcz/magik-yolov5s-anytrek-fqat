@@ -7,38 +7,42 @@ FLOAT_PROJECT=./runs/train/anytrek-yolov5n-float32
 FQAT_PROJECT=./runs/train/anytrek-yolov5n-4bit
 FLOAT_CKPT=./checkpoint/32W32F/weights/best-tmp.pt
 FQAT_CKPT=./checkpoint/4W4F/weights/best-tmp.pt
+# Formal 4bit FQAT setting. Use 64 only for quick smoke tests.
+CALIBRATE_SAMPLES=256
 
 ### float32 baseline:
-python3 train.py \
-  --data data/anytrek_multiclass.yaml \
-  --cfg models/yolov5n.yaml \
-  --weights yolov5n.pt \
-  --batch-size 96 \
-  --workers 16 \
-  --hyp data/hyp.scratch-float.yaml \
-  --project "$FLOAT_PROJECT" \
-  --epochs 300 \
-  --device 0 \
-  --bit 32
-
-LATEST_FLOAT_BEST="$(find "$FLOAT_PROJECT" -type f -path '*/weights/best.pt' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
-cp "$LATEST_FLOAT_BEST" "$FLOAT_CKPT"
-
-### 4bit FQAT:
 # python3 train.py \
 #   --data data/anytrek_multiclass.yaml \
 #   --cfg models/yolov5n.yaml \
-#   --weights "$FLOAT_CKPT" \
-#   --batch-size 16 \
-#   --hyp data/hyp.scratch.yaml \
-#   --project "$FQAT_PROJECT" \
+#   --weights yolov5n.pt \
+#   --batch-size 96 \
+#   --workers 16 \
+#   --hyp data/hyp.scratch-float.yaml \
+#   --project "$FLOAT_PROJECT" \
 #   --epochs 300 \
 #   --device 0 \
-#   --optimizer Adam \
-#   --bit 4
+#   --bit 32
 
-# LATEST_FQAT_BEST="$(find "$FQAT_PROJECT" -type f -path '*/weights/best.pt' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
-# cp "$LATEST_FQAT_BEST" "$FQAT_CKPT"
+# LATEST_FLOAT_BEST="$(find "$FLOAT_PROJECT" -type f -path '*/weights/best.pt' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
+# cp "$LATEST_FLOAT_BEST" "$FLOAT_CKPT"
+
+## 4bit FQAT:
+python3 train.py \
+  --data data/anytrek_multiclass.yaml \
+  --cfg models/yolov5n.yaml \
+  --weights "$FLOAT_CKPT" \
+  --batch-size 64 \
+  --workers 4 \
+  --hyp data/hyp.scratch.yaml \
+  --project "$FQAT_PROJECT" \
+  --epochs 300 \
+  --device 0 \
+  --optimizer Adam \
+  --calibrate-samples "$CALIBRATE_SAMPLES" \
+  --bit 4
+
+LATEST_FQAT_BEST="$(find "$FQAT_PROJECT" -type f -path '*/weights/best.pt' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
+cp "$LATEST_FQAT_BEST" "$FQAT_CKPT"
 
 
 

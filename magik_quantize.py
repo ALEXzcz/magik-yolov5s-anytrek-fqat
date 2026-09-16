@@ -21,7 +21,27 @@ seed_all(1000)
 
 DEFAULT_CALIBRATE_PATH = "calibrate.txt"
 DEFAULT_DATA_CFG = "data/anytrek_multiclass.yaml"
-DEFAULT_CALIBRATE_SAMPLES = 512
+DEFAULT_CALIBRATE_SAMPLES = 256
+CALIBRATE_QUOTAS = {
+    64: {
+        ("real", "person"): 38,
+        ("real", "forklift"): 11,
+        ("real", "mixed"): 4,
+        ("real", "empty"): 5,
+        ("web", "forklift"): 3,
+        ("logo", "logo"): 2,
+        ("logo", "empty"): 1,
+    },
+    256: {
+        ("real", "person"): 150,
+        ("real", "forklift"): 45,
+        ("real", "mixed"): 15,
+        ("real", "empty"): 20,
+        ("web", "forklift"): 13,
+        ("logo", "logo"): 10,
+        ("logo", "empty"): 3,
+    },
+}
 
 
 def _read_data_yaml(data_cfg):
@@ -33,8 +53,21 @@ def _resolve_list_path(data_cfg, list_path):
     list_path = Path(list_path)
     if list_path.is_absolute():
         return list_path
+    cwd_path = list_path.resolve()
+    if cwd_path.exists():
+        return cwd_path
     data_dir = Path(data_cfg).resolve().parent
     return (data_dir / list_path).resolve()
+
+
+def _resolve_train_image_path(train_root, image_path):
+    image_path = Path(image_path)
+    if image_path.is_absolute():
+        return image_path
+    cwd_path = image_path.resolve()
+    if cwd_path.exists():
+        return cwd_path
+    return (train_root / image_path).resolve()
 
 
 def _load_existing_calibrate_entries(calibrate_path):
@@ -89,9 +122,7 @@ def rebuild_calibrate_file(calibrate_path=DEFAULT_CALIBRATE_PATH,
 
     candidates = []
     for line in lines:
-        img_path = Path(line)
-        if not img_path.is_absolute():
-            img_path = (train_root / img_path).resolve()
+        img_path = _resolve_train_image_path(train_root, line)
         if img_path.exists():
             candidates.append(str(img_path))
 
@@ -99,17 +130,9 @@ def rebuild_calibrate_file(calibrate_path=DEFAULT_CALIBRATE_PATH,
         raise FileNotFoundError(f"No valid calibration images found from {train_list_path}")
 
     # Keep calibration representative when an old or missing file triggers
-    # automatic regeneration. The quotas mirror tools/rebuild_dataset_splits.py.
-    if sample_count == 512:
-        requested = {
-            ("real", "person"): 300,
-            ("real", "forklift"): 90,
-            ("real", "mixed"): 30,
-            ("real", "empty"): 40,
-            ("web", "forklift"): 26,
-            ("logo", "logo"): 20,
-            ("logo", "empty"): 6,
-        }
+    # automatic regeneration.
+    if sample_count in CALIBRATE_QUOTAS:
+        requested = CALIBRATE_QUOTAS[sample_count]
         grouped = {}
         for candidate in candidates:
             key = (_calibration_source(candidate), _calibration_category(candidate))
@@ -139,13 +162,13 @@ def get_magik_quantizer(bit=4, calibrate_path=DEFAULT_CALIBRATE_PATH,
                         data_cfg=DEFAULT_DATA_CFG,
                         calibrate_samples=DEFAULT_CALIBRATE_SAMPLES):
     entries = _load_existing_calibrate_entries(calibrate_path)
-    if len(entries) < calibrate_samples or not _entries_all_exist(entries):
+    if len(entries) != calibrate_samples or not _entries_all_exist(entries):
         rebuild_calibrate_file(
             calibrate_path=calibrate_path,
             data_cfg=data_cfg,
             sample_count=calibrate_samples,
         )
-    calibration_batch_size = 4
+    calibration_batch_size = 1
     calibration_batches = math.ceil(calibrate_samples / calibration_batch_size)
     cal_data_reader = Yolov5DataReader(
         path=calibrate_path,
@@ -171,6 +194,7 @@ def get_magik_quantizer(bit=4, calibrate_path=DEFAULT_CALIBRATE_PATH,
                           "input_mean" : [0, 0, 0], # mean
                           "input_var" : [255, 255, 255], # variance
                           "quantize_model_input" : False, # quantize input of the network or not
+                        #   "debug_info" : True
                          }
 
     magik_quantizer = MagikQuantizer(quantize_parameter,cal_data_reader)
@@ -189,6 +213,7 @@ def get_and_save_quant_model(magik_quantizer, weight, cfg, onnx):
     net.eval()
 
     net = magik_quantizer.quant(net)
+    # magik_quantizer.run_debug(net)
 
     chkpt['ema'] = net
     if onnx:
@@ -206,8 +231,9 @@ if __name__ == "__main__":
     parser.add_argument("--cfg", type=str, default="models/yolov5n.yaml", help="path to model")
     parser.add_argument("--calibrate-path", type=str, default=DEFAULT_CALIBRATE_PATH, help="path to calibration image list")
     parser.add_argument("--data", type=str, default=DEFAULT_DATA_CFG, help="path to data yaml for rebuilding calibration list")
+    parser.add_argument("--calibrate-samples", type=int, default=DEFAULT_CALIBRATE_SAMPLES, help="number of calibration images")
     parser.add_argument('--bit', type=int, default=8, help='You should set bit to 32 or 8 or 4')
     parser.add_argument('--onnx', action='store_true', help='use OpenCV DNN for ONNX inference')
     args = parser.parse_args()
-    magik_quantizer = get_magik_quantizer(args.bit, args.calibrate_path, args.data)
+    magik_quantizer = get_magik_quantizer(args.bit, args.calibrate_path, args.data, args.calibrate_samples)
     get_and_save_quant_model(magik_quantizer, args.weights, args.cfg, args.onnx)

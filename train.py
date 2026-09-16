@@ -125,7 +125,8 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         csd = intersect_dicts(csd, model.state_dict(), exclude=['anchor'])  # keep only matching keys/shapes
         model.load_state_dict(csd, strict=False)  # load compatible pretrained weights
         if opt.bit < 32:
-            magik_quantizer = get_magik_quantizer(opt.bit)
+            magik_quantizer = get_magik_quantizer(opt.bit, data_cfg=opt.data,
+                                                  calibrate_samples=opt.calibrate_samples)
             model.eval()
             model = magik_quantizer.quant(model)
         LOGGER.info(f'Transferred {len(csd)}/{len(model.state_dict())} items from {weights}')  # report
@@ -412,11 +413,21 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
             # Save model
             if (not nosave) or (final_epoch and not evolve):  # if save
+                if opt.bit < 32:
+                    # FQAT checkpoints are reloaded through the Magik flow:
+                    # build float model -> quantize -> load trained state_dict.
+                    # Saving state_dict avoids pickling runtime quantizer modules.
+                    ckpt_model = {k: v.detach().cpu() for k, v in de_parallel(model).state_dict().items()}
+                    ckpt_ema = ({k: v.detach().cpu() for k, v in ema.ema.state_dict().items()}
+                                if ema else None)
+                else:
+                    ckpt_model = deepcopy(de_parallel(model))
+                    ckpt_ema = deepcopy(ema.ema) if ema else None
                 ckpt = {
                     'epoch': epoch,
                     'best_fitness': best_fitness,
-                    'model': deepcopy(de_parallel(model)),#.half(),
-                    'ema': deepcopy(ema.ema),#.half(),
+                    'model': ckpt_model,#.half(),
+                    'ema': ckpt_ema,#.half(),
                     'updates': ema.updates,
                     'optimizer': optimizer.state_dict(),
                     'wandb_id': loggers.wandb.wandb_run.id if loggers.wandb else None,
@@ -451,6 +462,9 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         LOGGER.info(f'\n{epoch - start_epoch + 1} epochs completed in {(time.time() - t0) / 3600:.3f} hours.')
         for f in last, best:
             if f.exists():
+                if opt.bit < 32:
+                    LOGGER.info(f'Skipping optimizer strip and reload validation for FQAT checkpoint {f}')
+                    continue
                 strip_optimizer(f)  # strip optimizers
                 if f is best:
                     LOGGER.info(f'\nValidating {f}...')
@@ -488,6 +502,7 @@ def parse_opt(known=False):
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val image size (pixels)')
     parser.add_argument('--bit', type=int, default=4, help='You should set bit to 32 or 8 or 4')
+    parser.add_argument('--calibrate-samples', type=int, default=256, help='number of calibration images for FQAT')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
