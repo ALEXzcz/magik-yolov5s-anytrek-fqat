@@ -7,8 +7,6 @@ FLOAT_PROJECT=./runs/train/anytrek-yolov5n-float32
 FQAT_PROJECT=./runs/train/anytrek-yolov5n-4bit
 FLOAT_CKPT=./checkpoint/32W32F/weights/best-tmp.pt
 FQAT_CKPT=./checkpoint/4W4F/weights/best-tmp.pt
-# Formal 4bit FQAT setting. Use 64 only for quick smoke tests.
-CALIBRATE_SAMPLES=256
 
 ### float32 baseline:
 # python3 train.py \
@@ -38,13 +36,13 @@ python3 train.py \
   --epochs 300 \
   --device 0 \
   --optimizer Adam \
-  --calibrate-samples "$CALIBRATE_SAMPLES" \
+  --calibrate-samples 256 \
   --bit 4
 
 LATEST_FQAT_BEST="$(find "$FQAT_PROJECT" -type f -path '*/weights/best.pt' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
 cp "$LATEST_FQAT_BEST" "$FQAT_CKPT"
 
+bash test.sh
 
 
-# cd /home/alex/Desktop/yolov5n-anytrek-fqat && for i in $(seq 1 10); do date '+%H:%M:%S'; nvidia-smi --query-gpu=index,name,utilization.gpu,utilization.memory,memory.used,memory.total,temperature.gpu,power.draw --format=csv,noheader,nounits; sleep 1; done > gpu_status.txt
 # watch -n 1 nvidia-smi

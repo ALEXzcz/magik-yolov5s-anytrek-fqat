@@ -167,7 +167,8 @@ def run(
     # Dataloader
     if not training:
         if pt and not single_cls:  # check --weights are trained on --data
-            ncm = 1#model.model.nc
+            model_nc = getattr(getattr(model, 'model', None), 'nc', None)
+            ncm = int(model_nc) if model_nc is not None else len(getattr(model, 'names', []))
             assert ncm == nc, f'{weights[0]} ({ncm} classes) trained on different --data than what you passed ({nc} ' \
                               f'classes). Pass correct combination of --weights and --data that are trained together.'
         model.warmup(imgsz=(1 if pt else batch_size, 3, imgsz, imgsz))  # warmup
