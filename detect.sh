@@ -14,8 +14,8 @@ SOURCE_DIR=data/anytrek_detect/images
 #   --device 0 \
 #   --model_only \
 #   --bit 32 \
-#   --conf-thres 0.5 \
-#   --iou-thres 0.4
+#   --conf-thres 0.45 \
+#   --iou-thres 0.45
 
 # 8bit
 # python detect.py \
@@ -38,8 +38,8 @@ python detect.py \
   --device 0 \
   --view-img \
   --bit 4 \
-  --conf-thres 0.5 \
-  --iou-thres 0.4
+  --conf-thres 0.45 \
+  --iou-thres 0.45
 
 #for onnx:
 # 8bit

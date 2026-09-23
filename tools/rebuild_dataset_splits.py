@@ -3,6 +3,7 @@
 
 from collections import Counter, defaultdict
 from pathlib import Path
+import argparse
 import random
 
 
@@ -172,14 +173,14 @@ def write_calibration(assignments):
         grouped[(source, category)].append(path)
 
     requested = {
-        ("real", "person"): 150,
-        ("real", "forklift"): 45,
-        ("real", "mixed"): 15,
-        ("real", "empty"): 20,
-        ("web", "forklift"): 13,
+        ("real", "person"): 100,
+        ("real", "forklift"): 75,
+        ("real", "mixed"): 35,
+        ("real", "empty"): 25,
+        ("web", "forklift"): 0,
         ("web", "empty"): 0,
-        ("logo", "logo"): 10,
-        ("logo", "empty"): 3,
+        ("logo", "logo"): 15,
+        ("logo", "empty"): 6,
     }
     rng = random.Random(SEED)
     selected = []
@@ -220,7 +221,20 @@ def print_summary(assignments):
         )
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Rebuild deterministic, source-aware YOLO train/val/test lists."
+    )
+    parser.add_argument(
+        "--skip-calibration",
+        action="store_true",
+        help="do not rebuild calibrate.txt",
+    )
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
     paths = read_all_paths()
     records = []
     for path in paths:
@@ -238,7 +252,8 @@ def main():
     # with grouped splitting when capture-session metadata is available.
     assignments = stratified_individual(records)
     write_lists(assignments)
-    write_calibration(assignments)
+    if not args.skip_calibration:
+        write_calibration(assignments)
     print_summary(assignments)
 
 

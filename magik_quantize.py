@@ -33,13 +33,13 @@ CALIBRATE_QUOTAS = {
         ("logo", "empty"): 1,
     },
     256: {
-        ("real", "person"): 150,
-        ("real", "forklift"): 45,
-        ("real", "mixed"): 15,
-        ("real", "empty"): 20,
-        ("web", "forklift"): 13,
-        ("logo", "logo"): 10,
-        ("logo", "empty"): 3,
+        ("real", "person"): 100,
+        ("real", "forklift"): 75,
+        ("real", "mixed"): 35,
+        ("real", "empty"): 25,
+        ("web", "forklift"): 0,
+        ("logo", "logo"): 15,
+        ("logo", "empty"): 6,
     },
 }
 

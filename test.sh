@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+# RUN_DIR="${1:?Usage: bash test.sh <run_dir>}"
+
 python3 val.py \
   --data ./data/anytrek_multiclass.yaml \
   --task test \
@@ -12,7 +14,7 @@ python3 val.py \
   --batch-size 64 \
   --workers 4 \
   --bit 4 \
-  --project ./runs/train/anytrek-yolov5n-4bit2 \
+  --project "$RUN_DIR" \
   --name . \
   --exist-ok \
   --verbose

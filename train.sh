@@ -42,7 +42,7 @@ python3 train.py \
 LATEST_FQAT_BEST="$(find "$FQAT_PROJECT" -type f -path '*/weights/best.pt' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
 cp "$LATEST_FQAT_BEST" "$FQAT_CKPT"
 
-bash test.sh
-
+FQAT_RUN_DIR="$(dirname "$(dirname "$LATEST_FQAT_BEST")")"
+bash test.sh "$FQAT_RUN_DIR"
 
 # watch -n 1 nvidia-smi

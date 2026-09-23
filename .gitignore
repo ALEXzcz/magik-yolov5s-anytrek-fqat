@@ -13,3 +13,5 @@ magik-transform-tools
 *.iml
 
 data/anytrek_multiclass/*
+data/cropped_1920x1080
+runs/cvat_prelabels/inference
