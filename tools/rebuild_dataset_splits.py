@@ -11,7 +11,7 @@ ROOT = Path("data/anytrek_multiclass")
 SEED = 20260913
 RATIOS = {"train": 0.8, "val": 0.1, "test": 0.1}
 SPLITS = ("train", "val", "test")
-CALIBRATE_COUNT = 256
+CALIBRATE_COUNT = 128
 
 
 def read_all_paths():
@@ -173,14 +173,14 @@ def write_calibration(assignments):
         grouped[(source, category)].append(path)
 
     requested = {
-        ("real", "person"): 100,
-        ("real", "forklift"): 75,
-        ("real", "mixed"): 35,
-        ("real", "empty"): 25,
+        ("real", "person"): 50,
+        ("real", "forklift"): 38,
+        ("real", "mixed"): 18,
+        ("real", "empty"): 12,
         ("web", "forklift"): 0,
         ("web", "empty"): 0,
-        ("logo", "logo"): 15,
-        ("logo", "empty"): 6,
+        ("logo", "logo"): 7,
+        ("logo", "empty"): 3,
     }
     rng = random.Random(SEED)
     selected = []

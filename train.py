@@ -502,7 +502,7 @@ def parse_opt(known=False):
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val image size (pixels)')
     parser.add_argument('--bit', type=int, default=4, help='You should set bit to 32 or 8 or 4')
-    parser.add_argument('--calibrate-samples', type=int, default=256, help='number of calibration images for FQAT')
+    parser.add_argument('--calibrate-samples', type=int, default=128, help='number of calibration images for FQAT')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')

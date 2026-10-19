@@ -21,7 +21,7 @@ seed_all(1000)
 
 DEFAULT_CALIBRATE_PATH = "calibrate.txt"
 DEFAULT_DATA_CFG = "data/anytrek_multiclass.yaml"
-DEFAULT_CALIBRATE_SAMPLES = 256
+DEFAULT_CALIBRATE_SAMPLES = 128
 CALIBRATE_QUOTAS = {
     64: {
         ("real", "person"): 38,
@@ -32,14 +32,14 @@ CALIBRATE_QUOTAS = {
         ("logo", "logo"): 2,
         ("logo", "empty"): 1,
     },
-    256: {
-        ("real", "person"): 100,
-        ("real", "forklift"): 75,
-        ("real", "mixed"): 35,
-        ("real", "empty"): 25,
+    128: {
+        ("real", "person"): 50,
+        ("real", "forklift"): 38,
+        ("real", "mixed"): 18,
+        ("real", "empty"): 12,
         ("web", "forklift"): 0,
-        ("logo", "logo"): 15,
-        ("logo", "empty"): 6,
+        ("logo", "logo"): 7,
+        ("logo", "empty"): 3,
     },
 }
 
@@ -181,7 +181,7 @@ def get_magik_quantizer(bit=4, calibrate_path=DEFAULT_CALIBRATE_PATH,
     # get quantize_parameter
     quantize_parameter = {"weight_bitwidth" : bit,
                           "output_bitwidth" : bit,
-                          "target_device" : "T33", # platform
+                          "target_device" : "T32", # platform
                           "feature_quantize_method" : "DAQS",
                           "feature_calibration_method" : "MSE",
                           "weight_quantize_method" : "DAQS",
