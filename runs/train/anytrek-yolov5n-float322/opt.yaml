@@ -1,11 +1,12 @@
-weights: ./checkpoint/32W32F/weights/best-tmp.pt
+weights: yolov5n.pt
 cfg: models/yolov5n.yaml
 data: data/anytrek_multiclass.yaml
-hyp: data/hyp.scratch.yaml
+hyp: data/hyp.scratch-float.yaml
 epochs: 300
-batch_size: 16
+batch_size: 50
 imgsz: 640
-bit: 4
+bit: 32
+calibrate_samples: 128
 rect: false
 resume: false
 nosave: false
@@ -19,10 +20,10 @@ image_weights: false
 device: '0'
 multi_scale: false
 single_cls: false
-optimizer: Adam
+optimizer: SGD
 sync_bn: false
-workers: 8
-project: ./runs/train/anytrek-3cls-4bit-yolov5n
+workers: 16
+project: ./runs/train/anytrek-yolov5n-float32
 name: exp
 exist_ok: false
 quad: false
@@ -37,4 +38,4 @@ entity: null
 upload_dataset: false
 bbox_interval: -1
 artifact_alias: latest
-save_dir: runs/train/anytrek-3cls-4bit-yolov5n6
+save_dir: runs/train/anytrek-yolov5n-float322

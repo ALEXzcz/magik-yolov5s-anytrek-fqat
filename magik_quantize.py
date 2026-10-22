@@ -141,6 +141,12 @@ def rebuild_calibrate_file(calibrate_path=DEFAULT_CALIBRATE_PATH,
         selected = []
         for key, count in requested.items():
             pool = grouped.get(key, [])[:]
+            if len(pool) < count:
+                # Dataset merges may not preserve source filename prefixes.
+                # Fall back to the same label category from any source.
+                category = key[1]
+                pool = [path for (source, cat), paths in grouped.items()
+                        if cat == category for path in paths]
             rng.shuffle(pool)
             if len(pool) < count:
                 raise ValueError(

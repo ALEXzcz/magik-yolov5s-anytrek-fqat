@@ -6,7 +6,7 @@ epochs: 300
 batch_size: 64
 imgsz: 640
 bit: 4
-calibrate_samples: 256
+calibrate_samples: 128
 rect: false
 resume: false
 nosave: false
